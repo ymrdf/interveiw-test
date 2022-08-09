@@ -6,17 +6,19 @@ import UserModule from './user/module';
 import { SequelizeModule } from '@nestjs/sequelize';
 import { User } from './user/user.model';
 import { AuthModule } from './auth/auth.module';
+import { EventsModule } from './events/events.module';
 
 @Module({
   imports: [
+    EventsModule,
     CodeModule,
     UserModule,
     SequelizeModule.forRoot({
       dialect: 'mysql',
       host: 'localhost',
       port: 3306,
-      username: 'admin',
-      password: 'AAmznxbc_66',
+      username: 'root',
+      password: 'ymrdf',
       database: 'interview',
       models: [User],
     }),

@@ -1,27 +1,20 @@
 {
   "development": {
-    "username": "admin",
-    "password": "AAmznxbc_66",
-    "database": "interview",
-    "host": "127.0.0.1",
-    "dialect": "mysql"
-  },
-  "osx": {
-    "username": "admin",
-    "password": "AAmznxbc_66",
+    "username": "root",
+    "password": "ymrdf",
     "database": "interview",
     "host": "127.0.0.1",
     "dialect": "mysql"
   },
   "test": {
-    "username": "admin",
+    "username": "root",
     "password": "ymrdf",
     "database": "interview",
     "host": "127.0.0.1",
     "dialect": "mysql"
   },
   "production": {
-    "username": "admin",
+    "username": "root",
     "password": "ymrdf",
     "database": "interview",
     "host": "127.0.0.1",
