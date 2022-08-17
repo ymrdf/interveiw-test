@@ -1,13 +1,38 @@
-import { Controller, Get, Query, Put, Body } from '@nestjs/common';
+import {
+  Controller,
+  Get,
+  Query,
+  Res,
+  Body,
+  Post,
+  UseGuards,
+  Request,
+} from '@nestjs/common';
+import { Response } from 'express';
+import { LocalAuthGuard } from '../auth/local-auth.guard';
+import { AuthService } from '../auth/auth.service';
+import { SkipAuth } from '../auth/utils';
 import UserService from './service';
+import { User } from './user.model';
 
-@Controller('user')
+@Controller('api/user')
 export default class CodeController {
-  constructor(private readonly appService: UserService) {}
+  constructor(
+    private readonly userService: UserService,
+    private authService: AuthService,
+  ) {}
+
+  @SkipAuth()
+  @UseGuards(LocalAuthGuard)
+  @Post('login')
+  async login(@Request() req, @Res({ passthrough: true }) response: Response) {
+    const token = this.authService.login(req.user);
+    return token;
+  }
 
   @Get('hello')
   getHello(@Query() request: any): string {
-    this.appService
+    this.userService
       .findAll()
       .then((data) => {
         console.log('data', data);
@@ -15,16 +40,16 @@ export default class CodeController {
       .catch((e) => {
         console.log(e);
       });
-    return this.appService.getHello();
+    return this.userService.getHello();
   }
 
-  @Put('register')
-  register(@Body() request: any): string {
-    this.appService
-      .register({ name: request.name, password: request.password })
-      .catch((e) => {
-        console.log(e);
-      });
-    return this.appService.getHello();
+  @SkipAuth()
+  @Post('register')
+  async register(@Body() request: any): Promise<User> {
+    const res = await this.userService.register({
+      name: request.name,
+      password: request.password,
+    });
+    return res;
   }
 }

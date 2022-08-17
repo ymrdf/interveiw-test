@@ -1,0 +1,18 @@
+{
+  "editor.formatOnSave": true,
+  "editor.defaultFormatter": "esbenp.prettier-vscode",
+  "editor.codeActionsOnSave": {
+    "source.fixAll.tslint": true
+  },
+  "prettier.singleQuote": true,
+  "prettier.semi": false,
+  "files.associations": {
+    "*.mcss": "css",
+    "*.mless": "less"
+  },
+  "typescript.tsdk": "node_modules/typescript/lib",
+  "npm.packageManager": "pnpm",
+  "eslint.packageManager": "pnpm",
+  "eslint.nodePath": "node_modules/eslint",
+  "prettier.prettierPath": "node_modules/prettier"
+}

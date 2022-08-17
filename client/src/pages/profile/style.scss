@@ -1,0 +1,11 @@
+.Profile-container {
+  display: flex;
+  height: 100%;
+  align-items: stretch;
+  .info {
+    flex: 0 0 200px;
+  }
+  .operation {
+    flex: 1;
+  }
+}

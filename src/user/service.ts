@@ -1,5 +1,7 @@
 import { Injectable, HttpException, HttpStatus } from '@nestjs/common';
 import { InjectModel } from '@nestjs/sequelize';
+import { encrypt } from '../utils/encryption';
+import { v4 } from 'uuid';
 import { User } from './user.model';
 
 @Injectable()
@@ -14,7 +16,7 @@ export default class UserService {
   }
 
   async register(createUser: { name: string; password: string }) {
-    const { name } = createUser;
+    const { name, password } = createUser;
 
     const existUser = await this.userModel.findOne({
       where: { name },
@@ -23,7 +25,11 @@ export default class UserService {
       throw new HttpException('用户名已存在', HttpStatus.BAD_REQUEST);
     }
 
-    return await this.userModel.create(createUser);
+    return await this.userModel.create({
+      ...createUser,
+      id: v4(),
+      password: encrypt(password),
+    });
   }
 
   async findAll(): Promise<User[]> {

@@ -5,8 +5,10 @@ import { CodeModule } from './code/code.module';
 import UserModule from './user/module';
 import { SequelizeModule } from '@nestjs/sequelize';
 import { User } from './user/user.model';
+import { Interview } from './interview/interview.model';
 import { AuthModule } from './auth/auth.module';
 import { EventsModule } from './events/events.module';
+import { InterviewModule } from './interview/interview.module';
 
 @Module({
   imports: [
@@ -20,9 +22,10 @@ import { EventsModule } from './events/events.module';
       username: 'root',
       password: 'ymrdf',
       database: 'interview',
-      models: [User],
+      models: [User, Interview],
     }),
     AuthModule,
+    InterviewModule,
   ],
   controllers: [AppController],
   providers: [AppService],
