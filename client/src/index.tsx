@@ -3,6 +3,7 @@ import { createRoot } from 'react-dom/client';
 import './style/index.scss';
 import App from './component/app';
 import reportWebVitals from './reportWebVitals';
+import adapter from 'webrtc-adapter';
 
 const root = createRoot(document.getElementById('root')!);
 

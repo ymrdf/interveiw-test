@@ -45,7 +45,8 @@ class WebrtcManager {
     );
   }
 
-  callRemote = () => {
+  callRemote = async () => {
+    await this.initRtc();
     this.connection!.createOffer().then((offer: RTCSessionDescriptionInit) => {
       this.connection!.setLocalDescription(offer);
       console.log('rtc send');
@@ -56,59 +57,112 @@ class WebrtcManager {
   /**
    * 初始化RTCPeerConnection实例connection;
    */
-  init() {
-    this.connection = new RTCPeerConnection({
-      iceServers: [
-        {
-          urls: 'turn:43.142.118.202:3479?transport=tcp', // turn服务
-          username: 'ymrdf', // 服务的用户名
-          credential: 'aa123456', // 服务的密码
-        },
-      ],
-    });
+  async initRtc(isOncall: boolean = false) {
+    if (!this.connection) {
+      this.connection = new RTCPeerConnection({
+        iceServers: [
+          {
+            urls: 'turn:43.142.118.202:3479?transport=tcp', // turn服务
+            username: 'ymrdf', // 服务的用户名
+            credential: 'aa123456', // 服务的密码
+          },
+        ],
+      });
 
-    // 监听icecandidate事件把icecandidate传给面试对端
-    this.connection.addEventListener('icecandidate', (event) => {
-      if (event.candidate) {
-        if (event.candidate.candidate === '') {
-          return;
-        }
-        this.send({
-          iceCandidate: event.candidate,
-        });
-      }
-    });
-
-    this.connection.addEventListener('connectionstatechange', (event) => {
-      console.log('connectionstatechange', this.connection?.connectionState);
-
-      if (this.connection?.connectionState === 'connected') {
-        navigator.mediaDevices
-          .getUserMedia({ video: true, audio: true })
-          .then((localStream: MediaStream) => {
-            // alert('media');
-            console.log('add tracks');
-            // localStream.getTracks().forEach((track) => {
-            //   this.connection?.addTrack(track, localStream);
-            // });
-
-            // @ts-ignore
-            this.connection?.addStream(localStream);
-
-            const localVideo: HTMLVideoElement =
-              document.querySelector('#localVideo')!;
-            if (localVideo) {
-              localVideo.srcObject = localStream;
-            }
-          })
-          .catch((error) => {
-            // alert('Error accessing media devices.');
-            console.error('Error accessing media devices.', error);
+      // 监听icecandidate事件把icecandidate传给面试对端
+      this.connection.addEventListener('icecandidate', (event) => {
+        if (event.candidate) {
+          if (event.candidate.candidate === '') {
+            return;
+          }
+          this.send({
+            iceCandidate: event.candidate,
           });
-      }
-    });
-    this.connection.createDataChannel('ourcodeworld-rocks');
+        }
+      });
 
+      const remoteVideo: HTMLVideoElement =
+        document.querySelector('#remoteVideo')!;
+
+      // 监听connection的track事件，设置传入的视频流显示到页面上的video标签上。
+      this.connection.addEventListener('track', async (event) => {
+        console.log('listen track');
+        const [remoteStream] = event.streams;
+        if (remoteVideo) {
+          remoteVideo.srcObject = remoteStream;
+        }
+      });
+    }
+
+    if (!isOncall) {
+      await navigator.mediaDevices
+        .getUserMedia({
+          video: true,
+        })
+        .then((localStream: MediaStream) => {
+          // alert('media');
+          console.log('add tracks');
+          // localStream.getTracks().forEach((track) => {
+          //   this.connection?.addTrack(track, localStream);
+          // });
+
+          // @ts-ignore
+          window.localStream = localStream;
+
+          // @ts-ignore
+          this.connection?.addStream(window.localStream);
+
+          const localVideo: HTMLVideoElement =
+            document.querySelector('#localVideo')!;
+          if (localVideo) {
+            localVideo.srcObject = localStream;
+          }
+        })
+        .catch((error) => {
+          // alert('Error accessing media devices.');
+          console.error('Error accessing media devices.', error);
+        });
+    }
+
+    // this.connection.addEventListener('connectionstatechange', (event) => {
+    //   console.log('connectionstatechange', this.connection?.connectionState);
+
+    //   if (this.connection?.connectionState === 'connected') {
+    //     navigator.mediaDevices
+    //       .getUserMedia({
+    //         video: {
+    //           deviceId: {
+    //             exact:
+    //               'db765945ff40a136e50f590ab0d2c7545a57cedce7b73ef429e2f26d6355ae79',
+    //           },
+    //         },
+    //       })
+    //       .then((localStream: MediaStream) => {
+    //         // alert('media');
+    //         console.log('add tracks');
+    //         // localStream.getTracks().forEach((track) => {
+    //         //   this.connection?.addTrack(track, localStream);
+    //         // });
+
+    //         // @ts-ignore
+    //         this.connection?.addStream(localStream);
+
+    //         const localVideo: HTMLVideoElement =
+    //           document.querySelector('#localVideo')!;
+    //         if (localVideo) {
+    //           localVideo.srcObject = localStream;
+    //         }
+    //       })
+    //       .catch((error) => {
+    //         // alert('Error accessing media devices.');
+    //         console.error('Error accessing media devices.', error);
+    //       });
+    //   }
+    // });
+    // this.connection.createDataChannel('ourcodeworld-rocks');
+  }
+
+  init() {
     // 监听websocket传来的webrtc 相关信息，
     this.socket!.addEventListener('message', async (ev: MessageEvent) => {
       const message = JSON.parse(ev.data);
@@ -124,6 +178,9 @@ class WebrtcManager {
       }
       // 如里是offer信息则保存对端offer则返回给对端answer，
       if (data.offer) {
+        if (!this.connection) {
+          await this.initRtc(true);
+        }
         this.connection!.setRemoteDescription(
           new RTCSessionDescription(data.offer),
         );
@@ -140,18 +197,6 @@ class WebrtcManager {
         } catch (e) {
           console.error('Error adding received ice candidate', e);
         }
-      }
-    });
-
-    const remoteVideo: HTMLVideoElement =
-      document.querySelector('#remoteVideo')!;
-
-    // 监听connection的track事件，设置传入的视频流显示到页面上的video标签上。
-    this.connection.addEventListener('track', async (event) => {
-      console.log('listen track');
-      const [remoteStream] = event.streams;
-      if (remoteVideo) {
-        remoteVideo.srcObject = remoteStream;
       }
     });
   }
