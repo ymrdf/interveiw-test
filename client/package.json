@@ -8,6 +8,7 @@
     "bfj": "^7.0.2",
     "browserslist": "^4.21.3",
     "camelcase": "^6.3.0",
+    "console-feed": "^3.4.0",
     "dotenv": "^10.0.0",
     "dotenv-expand": "^5.1.0",
     "fs-extra": "^10.1.0",

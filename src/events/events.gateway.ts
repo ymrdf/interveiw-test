@@ -24,16 +24,22 @@ export class EventsGateway {
   @WebSocketServer()
   server: Server;
 
+  /**
+   * 处理websocket来的event类型的信息即面试创建相关信息
+   * @param client 客户端socket
+   * @param data 请求数据
+   * @returns 回复内容
+   */
   @UseGuards(JwtAuthGuard)
   @SubscribeMessage('events')
   async onEvent(client: Socket, data: any): Promise<any> {
-    console.log('events', data);
     const type = data.type;
     const scope = data.scope;
     if (scope) {
       manager.scopeEvent(data);
     }
     switch (type) {
+      // 创建面试请求
       case 'create-interview':
         const res = await this.interviewService.createOne(data.user.userid);
         manager.createInterview({
@@ -42,14 +48,14 @@ export class EventsGateway {
           id: res.id,
         });
 
-        return { events: 'create-interview-success', data: res };
+        return { event: 'create-interview-success', data: res };
+      // 加入面试请求
       case 'inter-interview':
         const { role, id, user, msg } = data;
         const inter = await this.interviewService.findOne(id);
-        console.log('interview', inter);
         if (!inter) {
           return {
-            events: 'inter-interview-fail',
+            event: 'inter-interview-fail',
             data: {
               msg: 'no interview',
             },
@@ -57,24 +63,27 @@ export class EventsGateway {
         }
 
         const interview = manager.getInterviewById(id);
+        // 判断请求者面试中的角色，当是面试官时
         if (role === 'interviewer') {
           if (inter && inter.interviewerId !== user.userid) {
             return {
-              events: 'inter-interview-fail',
+              event: 'inter-interview-fail',
               data: {
                 msg: 'not you interview',
               },
             };
           }
+          // 存在面试时，加入面试
           if (interview) {
             interview.addNewInterviewer(user.username, user.userid, client);
             manager.saveSocketInterview(client, interview);
             return {
-              events: 'inter-interview-success',
+              event: 'inter-interview-success',
               data: {
                 interviewId: interview.id,
               },
             };
+            // 不存在面试时，创建面试
           } else {
             manager.createInterview({
               id: inter.id,
@@ -82,10 +91,11 @@ export class EventsGateway {
               user,
             });
             return {
-              events: 'inter-interview-success',
+              event: 'inter-interview-success',
             };
           }
         } else if (role === 'interviewee') {
+          // 当请求者是面试者时，并且存在面试时，调用面试的请求加入方法
           if (
             interview &&
             inter &&
@@ -94,7 +104,7 @@ export class EventsGateway {
             interview.requestInter(client, user.username, user.userid, msg);
           } else {
             return {
-              events: 'inter-interview-fail',
+              event: 'inter-interview-fail',
               data: {
                 msg: 'no interview created',
               },
@@ -102,9 +112,42 @@ export class EventsGateway {
           }
         } else {
           return {
-            events: 'create-interview-success',
+            event: 'create-interview-success',
           };
         }
+    }
+  }
+
+  /**
+   * 监听所有有关webrtc的通讯，从interviewManger中找到对应面试，
+   * 然后交给Interview类的retransmission方法，把请求转发给面试的另一方。
+   * @param data 传递的数据
+   */
+  @UseGuards(JwtAuthGuard)
+  @SubscribeMessage('webrtc')
+  async onWebrtc(client: Socket, data: any): Promise<any> {
+    const { scope, user } = data;
+    console.log('webrtc msg', scope, data);
+    // 找到请求者所在面试，调用面试的方法转发数据
+    if (scope) {
+      const interview2 = manager.getInterviewById(data.scope);
+      console.log('interview2', !!interview2);
+      interview2.retransmission(user.userid, 'webrtc', data.data);
+    }
+  }
+
+  /**
+   *转发所有chat类型的数据
+   */
+  @UseGuards(JwtAuthGuard)
+  @SubscribeMessage('chat')
+  async onChat(client: Socket, data: any): Promise<any> {
+    const { scope, user } = data;
+    console.log('chat msg', scope, data);
+    // 找到请求者所在面试，调用面试的方法转发数据
+    if (scope) {
+      const interview2 = manager.getInterviewById(data.scope);
+      interview2.retransmission(user.userid, 'chat', data.data);
     }
   }
 

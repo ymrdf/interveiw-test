@@ -23,7 +23,7 @@ import { JwtAuthGuard } from './jwt-auth.guard';
     LocalStrategy,
     JwtStrategy,
     {
-      provide: APP_GUARD,
+      provide: APP_GUARD, // 注册为全局守卫
       useClass: JwtAuthGuard,
     },
   ],

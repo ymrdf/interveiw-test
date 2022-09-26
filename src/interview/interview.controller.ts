@@ -2,6 +2,9 @@ import { Controller, Get, Param, Post, Request, Body } from '@nestjs/common';
 import { InterviewService } from './interview.service';
 import { Interview } from './interview.model';
 
+/**
+ * 与面试相关请求
+ */
 @Controller('api/interview')
 export class InterviewController {
   constructor(private readonly interviewService: InterviewService) {}

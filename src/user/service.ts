@@ -11,13 +11,15 @@ export default class UserService {
     private userModel: typeof User,
   ) {}
 
-  getHello(): string {
-    return 'Hello World!';
-  }
-
+  /**
+   * 注册用户方法
+   * @param createUser 用户信息
+   * @returns Promise
+   */
   async register(createUser: { name: string; password: string }) {
     const { name, password } = createUser;
 
+    // 判断用户表中是否有同名用户，有的话抛出错误
     const existUser = await this.userModel.findOne({
       where: { name },
     });
@@ -25,6 +27,7 @@ export default class UserService {
       throw new HttpException('用户名已存在', HttpStatus.BAD_REQUEST);
     }
 
+    // 用uuid库给密码加密，然后保存在用户表中
     return await this.userModel.create({
       ...createUser,
       id: v4(),

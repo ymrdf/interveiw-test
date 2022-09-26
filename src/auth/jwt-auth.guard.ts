@@ -13,19 +13,18 @@ export class JwtAuthGuard extends AuthGuard('jwt') {
   }
 
   canActivate(context: ExecutionContext) {
+    // 当前是否是无需验证的公共请求
     const isPublic = this.reflector.getAllAndOverride<boolean>(IS_PUBLIC_KEY, [
       context.getHandler(),
       context.getClass(),
     ]);
-    if (isPublic) {
-      return true;
-    }
+    if (isPublic) return true;
 
+    // 判断当前是否是websocket通信，是的话解析数据中的token合法的话通过
     // @ts-ignore
     if (context.contextType === 'ws') {
       // @ts-ignore
       const res = jwt.verify(context.args[1].token, jwtConstants.secret);
-      console.log('--->', res);
       if (res) {
         // @ts-ignore
         context.args[1].user = {
@@ -37,8 +36,6 @@ export class JwtAuthGuard extends AuthGuard('jwt') {
         return true;
       }
     }
-    // @ts-ignore
-    // console.log(context.args[0] instanceof Socket);
     return super.canActivate(context);
   }
 }

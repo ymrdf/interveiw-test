@@ -22,27 +22,24 @@ export default class CodeController {
     private authService: AuthService,
   ) {}
 
+  /**
+   * 处理登录请求
+   * @param req 请求对象
+   * @returns token 返回token
+   */
   @SkipAuth()
   @UseGuards(LocalAuthGuard)
   @Post('login')
-  async login(@Request() req, @Res({ passthrough: true }) response: Response) {
+  async login(@Request() req) {
     const token = this.authService.login(req.user);
     return token;
   }
 
-  @Get('hello')
-  getHello(@Query() request: any): string {
-    this.userService
-      .findAll()
-      .then((data) => {
-        console.log('data', data);
-      })
-      .catch((e) => {
-        console.log(e);
-      });
-    return this.userService.getHello();
-  }
-
+  /**
+   * 处理注册请求
+   * @param request 请求对象
+   * @returns Promise<User> 用户信息
+   */
   @SkipAuth()
   @Post('register')
   async register(@Body() request: any): Promise<User> {

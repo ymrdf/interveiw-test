@@ -2,9 +2,13 @@ import { observable, action, makeAutoObservable } from 'mobx';
 import { ACCESS_TOKEN } from '../../constants';
 import { getInterview } from './apis';
 import type { IInterview } from './type';
+import WebrtcManager from './webrtc';
+import ChatManager from './chat';
 
-class Interview {
+export class Interview {
   socket: WebSocket | null = null;
+  webrtcManager: WebrtcManager;
+  chatManager: ChatManager;
 
   @observable.ref
   currentInterview: IInterview | null = null;
@@ -64,11 +68,11 @@ class Interview {
           this.socket?.removeEventListener('message', handle);
           j({ message: 'timeout' });
         }, waitTime);
-        if (message.events === `${type}-success`) {
+        if (message.event === `${type}-success`) {
           this.socket?.removeEventListener('message', handle);
           clearTimeout(timeoutFlag);
           r(message.data);
-        } else if (message.events === `${type}-fail`) {
+        } else if (message.event === `${type}-fail`) {
           this.socket?.removeEventListener('message', handle);
           clearTimeout(timeoutFlag);
           j(message.data);
@@ -82,7 +86,7 @@ class Interview {
   listenInter() {
     const handle = async (ev: MessageEvent) => {
       const message = JSON.parse(ev.data);
-      if (message.events === 'request-inter') {
+      if (message.event === 'request-inter') {
         this.send('request-inter-reply', {
           agree: true,
           scope: this.currentInterview?.id,
@@ -125,8 +129,17 @@ class Interview {
 
   listenToOpposite() {}
 
+  initWebrtc() {
+    this.webrtcManager.init();
+  }
+  call() {
+    this.webrtcManager.callRemote();
+  }
+
   constructor() {
     makeAutoObservable(this);
+    this.webrtcManager = new WebrtcManager(this);
+    this.chatManager = new ChatManager(this);
   }
 }
 

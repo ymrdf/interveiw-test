@@ -14,6 +14,16 @@ const App = observer(() => {
     if (window.location.pathname !== '/login') {
       profileStore.queryUser();
     }
+
+    // navigator.mediaDevices
+    //   .getUserMedia({ video: true, audio: true })
+    //   .then((localStream: MediaStream) => {
+    //     alert('media');
+    //   })
+    //   .catch((error) => {
+    //     alert('Error accessing media devices.');
+    //     console.error('Error accessing media devices.', error);
+    //   });
   }, []);
   return (
     <Spin spinning={profileStore.loading}>

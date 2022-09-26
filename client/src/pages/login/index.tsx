@@ -16,8 +16,6 @@ const LoginRegister: React.FC = () => {
   const state = location.state as { from?: { pathname?: string } };
   const from = state?.from?.pathname || '/profile';
 
-  console.log('from', from);
-
   const onFinish = async (values: any) => {
     const res = await login(values);
     console.log('Success:', res);

@@ -25,21 +25,13 @@ export class CollaborateGateway {
   @WebSocketServer()
   server: Server;
 
-  @SubscribeMessage('events')
-  onEvent(client: any, data: any): Observable<WsResponse<number>> {
-    return from([1, 2, 3]).pipe(
-      map((item) => ({ event: 'events', data: item })),
-    );
-  }
-
+  // 初始化websocket后，处理文档协同
   afterInit(server: Server) {
     server.on('connection', (client: Socket, request: any) => {
-      console.log('con------>', request.url);
       const docName = request.url.split('?')[1];
-      if (!docName) {
-        return;
-      }
+      if (!docName) return;
 
+      // 调用y-websocket的setupWSConnection函数用y-websocket库处理文档协同的逻辑。
       wutils.setupWSConnection(client, request, { docName, gc: true });
     });
   }

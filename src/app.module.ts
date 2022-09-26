@@ -15,14 +15,15 @@ import { InterviewModule } from './interview/interview.module';
     EventsModule,
     CodeModule,
     UserModule,
+    // 配置数据库的链接信息
     SequelizeModule.forRoot({
-      dialect: 'mysql',
-      host: 'localhost',
-      port: 3306,
-      username: 'root',
-      password: 'ymrdf',
-      database: 'interview',
-      models: [User, Interview],
+      dialect: 'mysql', // 数据库类型
+      host: 'localhost', // 地址
+      port: 3306, // 端口
+      username: 'root', // 用户名
+      password: 'ymrdf', // 密码
+      database: 'interview', // 数据库
+      models: [User, Interview], // 数据模型
     }),
     AuthModule,
     InterviewModule,

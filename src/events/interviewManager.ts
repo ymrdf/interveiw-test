@@ -7,7 +7,7 @@ export class ConnectUser {
   socket: Socket;
 
   send(type: string, data: any = {}) {
-    this.socket.send(JSON.stringify({ events: type, data }));
+    this.socket.send(JSON.stringify({ event: type, data }));
   }
 
   get active() {
@@ -27,6 +27,9 @@ interface IReseiveData {
   [pro: string]: any;
 }
 
+/**
+ * 包括面试双方通信以及面试创建的各种方法。
+ */
 export class Interview {
   id: string;
   interviewer: ConnectUser | null;
@@ -35,6 +38,10 @@ export class Interview {
   server: Socket;
 
   waitingUser: ConnectUser[] = [];
+
+  get everyBody() {
+    return [this.interviewee, this.interviewer];
+  }
 
   clientDisconnect(socket: Socket) {
     if (this.interviewee && this.interviewee.socket === socket) {
@@ -48,6 +55,22 @@ export class Interview {
 
   isEmpty() {
     return !this.interviewee && !this.interviewer;
+  }
+
+  getRoleBySocket(v: Socket) {
+    return this.everyBody.find((item) => item.socket === v);
+  }
+
+  getOppositeBySocket(v: Socket) {
+    return this.everyBody.find((item) => item.socket !== v);
+  }
+
+  getRoleById(v: string) {
+    return this.everyBody.find((item) => item.id === v);
+  }
+
+  getOppositeById(v: string) {
+    return this.everyBody.find((item) => item.id !== v);
   }
 
   addInterviewee(v: ConnectUser) {
@@ -72,6 +95,7 @@ export class Interview {
     }
   }
 
+  // 处理对“加入面试”请求的回复
   handleInterReply({ agree, id }: IReseiveData) {
     const currentProposer = this.waitingUser.find((item) => item.id === id);
     if (agree && currentProposer && currentProposer.active) {
@@ -89,13 +113,14 @@ export class Interview {
     this.waitingUser = this.waitingUser.filter((item) => item.id !== id);
   }
 
+  // 请求加入面试
   requestInter(socket: Socket, name: string, id: string, msg: string) {
     const user = new ConnectUser(name, id, socket);
     this.waitingUser.push(user);
 
     this.interviewer.socket.send(
       JSON.stringify({
-        events: 'request-inter',
+        event: 'request-inter',
         data: {
           name,
           msg,
@@ -105,6 +130,31 @@ export class Interview {
     );
   }
 
+  // 转发面试中双方的信息
+  retransmission(originUserId: string, type: string, data: any);
+  retransmission(originSocket: Socket, type: string, data: any);
+  retransmission(query: any, type: string, data: any) {
+    console.log(
+      'retransmisssion',
+      typeof query === 'string',
+      this.getRoleById(query),
+    );
+    // 根据userId或者socket获取对方User实例，然后发送信息
+    if (typeof query === 'string') {
+      const my = this.getRoleById(query);
+      if (my) {
+        const opposite = this.getOppositeById(query);
+        opposite.send(type, data);
+      }
+    } else {
+      const my = this.getRoleBySocket(query);
+      if (my) {
+        const opposite = this.getOppositeBySocket(query);
+        opposite.send(type, data);
+      }
+    }
+  }
+
   constructor(id: string, interviewer: ConnectUser, server: Socket) {
     this.id = id;
     this.interviewer = interviewer;
@@ -112,8 +162,11 @@ export class Interview {
   }
 }
 
+// 管理所有面试的类
 export class InterviewManager {
+  // 所有面试map,以面试ID为KEY
   interviews = new Map<string, Interview>();
+  // 所有面试map,以参加者socket为KEY
   sockInterviewMap = new Map<Socket, Interview>();
   server: Socket = null;
 
@@ -133,10 +186,14 @@ export class InterviewManager {
     return this.interviews.get(id);
   };
 
+  /**
+   * 创建面试
+   * @param data 创建面试相关信息
+   */
   createInterview(data: {
-    id: string;
-    socket: Socket;
-    user: { username: string; userid: string };
+    id: string; // 面试ID
+    socket: Socket; // 创建者socket
+    user: { username: string; userid: string }; // 创建者信息
   }) {
     const interviewer = new ConnectUser(
       data.user.username,
@@ -165,24 +222,6 @@ export class InterviewManager {
       inter.handleEvent(data);
     }
   }
-
-  // addToInterview(data: {
-  //   id: string;
-  //   socket: Socket;
-  //   user: { username: string; userid: string };
-  // }) {
-  //   const interview = this.interviews.get(data.id);
-  //   if (interview) {
-  //     const interviewee = new ConnectUser(
-  //       data.user.username,
-  //       data.user.userid,
-  //       data.socket,
-  //     );
-  //     interview.addInterviewee(interviewee);
-  //   } else {
-  //     return { status: 'error', msg: 'interview did not found ' };
-  //   }
-  // }
 }
 
 export const manager = new InterviewManager();

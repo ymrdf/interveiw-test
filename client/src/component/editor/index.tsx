@@ -1,8 +1,10 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import * as Y from 'yjs';
 import { WebsocketProvider } from 'y-websocket';
 import { MonacoBinding } from 'y-monaco';
 import * as monaco from 'monaco-editor/esm/vs/editor/editor.api';
+
+import Console from '../console';
 
 // import Chat from '../chat';
 
@@ -13,11 +15,28 @@ interface IProps {
 }
 
 function App({ interviewId }: IProps) {
+  const [value, setValue] = useState<string>('');
   useEffect(() => {
     if (!interviewId) {
       return;
     }
-    console.log('========>', window.MonacoEnvironment);
+
+    // 创建editor实例，将编辑器渲染到页面上
+    const editor = monaco.editor.create(
+      document.getElementById('monaco-container')!,
+      {
+        value: '',
+        language: 'javascript',
+        theme: 'vs-dark',
+      },
+    );
+
+    // 监听编辑器的内容变化事件，将变化的输入内容存在state上
+    editor.onDidChangeModelContent(() => {
+      setValue(editor.getValue());
+    });
+
+    // 初始化Y.Doc文档和WebsocketProvider实例
     const doc = new Y.Doc();
     const type = doc.getText('monaco');
     const wsProvider = new WebsocketProvider(
@@ -29,15 +48,7 @@ function App({ interviewId }: IProps) {
       console.log(event.status); // logs "connected" or "disconnected"
     });
 
-    const editor = monaco.editor.create(
-      document.getElementById('monaco-container')!,
-      {
-        value: '',
-        language: 'javascript',
-        theme: 'vs-dark',
-      },
-    );
-
+    // 把文档、websocketProvider实例与editor实例通过MonacoBinding联系起来，进行文档协同
     const monacoBinding = new MonacoBinding(
       type,
       editor.getModel()!,
@@ -84,6 +95,7 @@ function App({ interviewId }: IProps) {
         style={{ height: '500px', width: '900px' }}
         id="monaco-container"
       ></div>
+      <Console code={value} />
       <div>
         <video id="localVideo" autoPlay playsInline controls={false} />
         {/* <Chat /> */}
